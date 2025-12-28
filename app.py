@@ -25,56 +25,38 @@ def format_number(value: float, decimals: int = 2) -> str:
 def create_results_table(results, inputs: TradingInputs) -> pd.DataFrame:
     """결과 표 생성 (동적 익절가 처리)"""
     items = [
-        "1. 손절 폭 (%)",
-        "1. 손절가",
-        "1. 실제 손실 금액",
-        "2. 적정 포지션 크기 (Notional)",
-        "2. 적정 포지션 수량",
-        "3. 포지션 사용 레버리지",
-        "3. 실질 레버리지",
+        "손절 폭 (%) / 손절가 / 실제 손실 금액",
+        "적정 포지션 크기 (Notional) / 수량",
+        "실제 진입 레버리지",
+        "필요 Margin",
+        "실제 진입 Notional",
+        "실제 진입 수량",
     ]
     
     values = [
-        format_percent(results.stop_loss_pct),
-        format_currency(results.stop_loss_price),
-        format_currency(results.actual_loss_amount),
-        format_currency(results.position_notional),
-        format_number(results.position_quantity, 6),
-        f"{results.position_leverage:.2f}x",
-        f"{results.effective_leverage:.2f}x",
+        f"{format_percent(results.stop_loss_pct)} / {format_currency(results.stop_loss_price)} / {format_currency(results.actual_loss_amount)}",
+        f"{format_currency(results.position_notional)} / {format_number(results.position_quantity, 6)}",
+        f"{results.actual_entry_leverage:.2f}x",
+        format_currency(results.required_margin),
+        format_currency(results.actual_entry_notional),
+        format_number(results.actual_entry_quantity, 6),
     ]
     
     # 동적 익절가 결과 추가
     for tp_num in sorted(results.take_profit_results.keys()):
         tp_result = results.take_profit_results[tp_num]
-        items.extend([
-            f"4. {tp_num}차 손익비 (R/R)",
-            f"4. 실제 {tp_num}차 손익비",
-            f"4. {tp_num}차 익절 시 순이익"
-        ])
-        values.extend([
-            f"{tp_result['rr_ratio']:.2f}",
-            f"{tp_result['actual_rr']:.2f}",
-            format_currency(tp_result['profit'])
-        ])
+        items.append(f"{tp_num}차 손익비 (R/R) / 순이익")
+        values.append(f"{tp_result['rr_ratio']:.2f} / {format_currency(tp_result['profit'])}")
     
-    # 나머지 항목 추가
+    # 구조적 문제 여부와 종합 판정을 가장 아래에 추가
     items.extend([
-        "5. 구조적 문제 여부",
-        "6. 필요 Margin",
-        "7. 종합 판정",
-        "8. 실제 진입 Notional",
-        "8. 실제 진입 수량",
-        "8. 실제 진입 레버리지"
+        "구조적 문제 여부",
+        "종합 판정"
     ])
     
     values.extend([
         results.structural_issue,
-        format_currency(results.required_margin),
-        results.overall_judgment,
-        format_currency(results.actual_entry_notional),
-        format_number(results.actual_entry_quantity, 6),
-        f"{results.actual_entry_leverage:.2f}x"
+        results.overall_judgment
     ])
     
     return pd.DataFrame({"항목": items, "값": values})
